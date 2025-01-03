@@ -32,7 +32,7 @@ const renderReviews = ({ item }) => {
 };
 
 const CompletedReviews = () => {
-  const { review = [], loading } = useSelector(state => state.review); // Default to empty array
+  const { review = [], loading } = useSelector(state => state.review);
   const dispatch = useDispatch();
 
   useEffect(() => {
