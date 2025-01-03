@@ -1,4 +1,10 @@
-import {FlatList, Text, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import styles from './styles/Styles';
 import {useNavigation} from '@react-navigation/native';
@@ -28,9 +34,11 @@ const renderInvoiceData = ({item}) => {
 const Invoices = () => {
   const navigation = useNavigation();
   const [invoicesData, setInvoicesData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // get invoice data api
   const getInvoice = async () => {
+    setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -46,23 +54,25 @@ const Invoices = () => {
         },
       });
       if (res.data.success === true) {
+        setLoading(false);
         setInvoicesData(res.data.data.reviews);
         console.log(res.data.data);
       }
     } catch (error) {
+      setLoading(false);
       console.log(error);
     }
   };
 
   useEffect(() => {
     getInvoice();
-  }, []);
+  },[]);
   return (
     <>
       {/*headersection */}
-      <Header title="Invoices"/>
+      <Header title="Invoices" />
       <View style={styles.container}>
-        <View
+        {/* <View
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -70,13 +80,22 @@ const Invoices = () => {
           }}>
           <Text>2022</Text>
           <Text>$3,365</Text>
-        </View>
-        <FlatList
-          data={invoicesData}
-          renderItem={renderInvoiceData}
-          // keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.scrollContainer}
-        />
+        </View> */}
+        {loading ? (
+          <View
+            style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+            <ActivityIndicator size="large" />
+          </View>
+        ) : (
+          <>
+            <FlatList
+              data={invoicesData}
+              renderItem={renderInvoiceData}
+              // keyExtractor={item => item.id.toString()}
+              contentContainerStyle={styles.scrollContainer}
+            />
+          </>
+        )}
         <TouchableOpacity
           onPress={() => navigation.navigate('AddInvoices')}
           style={{
