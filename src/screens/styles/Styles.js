@@ -171,9 +171,17 @@ paddingTop:5
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius:10,
-    height:200,
-    marginHorizontal:10
+    borderRadius: 10,
+    height: 200,
+    marginHorizontal: 10,
+    backgroundColor: '#ffff',
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, 
+    shadowRadius: 5,
+    // Shadow for Android
+    elevation: 5,
   },
   wrapper:{
     flexDirection:'row',

@@ -5,7 +5,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ImageBackground,
   Image,
@@ -43,14 +42,14 @@ const OtpScreen = () => {
     }
 
     try {
-      const email = await AsyncStorage.getItem('email'); // Retrieve the stored email from AsyncStorage
+      const email = await AsyncStorage.getItem('email');
 
       if (!email) {
         Alert.alert('Error', 'Email is missing.');
         return;
       }
 
-      console.log('Email retrieved from AsyncStorage:', email); // Debugging log
+      console.log('Email retrieved from AsyncStorage:', email);
 
       const response = await axios.post(Base_url.otplogin, {
         email: email,
