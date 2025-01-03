@@ -85,38 +85,38 @@ const HomePage = () => {
           <TouchableOpacity
             style={{flex: 1}}
             onPress={() => navigation.navigate('Review')}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#00008B', '#ADD8E6']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/reviews.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Reviews</Text>
-            </LinearGradient>
+              <Image source={require('../assets/reviews-new.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Reviews</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={{flex: 1}} onPress={handleWebchat}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#00008B', '#ADD8E6']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/webchat.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Web Chat</Text>
-            </LinearGradient>
+              <Image source={require('../assets/webchat-new.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Web Chat</Text>
+            </View>
           </TouchableOpacity>
         </View>
         <View style={styles.wrapper}>
           <TouchableOpacity style={{flex: 1}}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#00008B', '#ADD8E6']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/social.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Social</Text>
-            </LinearGradient>
+              <Image source={require('../assets/social-new.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Social</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={{flex: 1}}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#00008B', '#ADD8E6']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/video-conference.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Video Conference</Text>
-            </LinearGradient>
+              <Image source={require('../assets/video-conference-new.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Video Conference</Text>
+            </View>
           </TouchableOpacity>
         </View>
         {/* <View style={styles.wrapper}>
@@ -163,22 +163,22 @@ const HomePage = () => {
           <TouchableOpacity
             style={{flex: 1}}
             onPress={() => navigation.navigate('Invoices')}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#00008B', '#ADD8E6']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/invoices.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Invoices</Text>
-            </LinearGradient>
+              <Image source={require('../assets/invoice-new.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Invoices</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={{flex: 1}}
             onPress={() => navigation.navigate('Insights')}>
-            <LinearGradient
-              colors={['#00008B', '#ADD8E6']}
+            <View
+              // colors={['#ffff','#ffff']}
               style={styles.linearGradient}>
-              <Image source={require('../assets/doller.png')} />
-              <Text style={[styles.h5, {marginTop: 10}]}>Insights</Text>
-            </LinearGradient>
+              <Image source={require('../assets/insights.png')} />
+              <Text style={[styles.h5, {marginTop: 10,color:'#000'}]}>Insights</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>

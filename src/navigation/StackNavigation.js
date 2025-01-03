@@ -17,6 +17,8 @@ import Insights from "../screens/Insights/Insights";
 import CompletedReviews from "../screens/CompletedReviews";
 import CreateTicket from "../screens/Ticket/CreateTicket";
 import Tickets from "../screens/Ticket/Tickets";
+import Building from "../screens/Buildings";
+import AudioCallScreen from "../screens/AudioCallScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -34,12 +36,14 @@ const StackNavigation=()=>{
             <Stack.Screen name="AddReviews" component={AddReviews} options={{headerShown:false}}/>
             <Stack.Screen name="Review" component={Reviews} options={{headerShown:false}}/>
             <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{headerShown:false}}/>
+            <Stack.Screen name="AudioCallScreen" component={AudioCallScreen} options={{headerShown:false}}/>
             <Stack.Screen name="OtpScreen" component={OtpScreen} options={{headerShown:false}}/>
             <Stack.Screen name="Setting" component={Settings} options={{headerShown:false}}/>
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{headerShown:false}}/>
             <Stack.Screen name="Insights" component={Insights} options={{headerShown:false}}/>
             <Stack.Screen name="CreateTicket" component={CreateTicket} options={{headerShown:false}}/>
             <Stack.Screen name="Tickets" component={Tickets} options={{headerShown:false}}/>
+            <Stack.Screen name="Buildings" component={Building} options={{headerShown:false}}/>
         </Stack.Navigator>
     );
 }

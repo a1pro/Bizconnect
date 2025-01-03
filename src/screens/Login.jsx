@@ -122,22 +122,38 @@ const Login = () => {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       setUserInfo(userInfo);
+  
       if (userInfo) {
         const email = userInfo.data.user.email;
         const provider_name = 'google';
         const provider_id = userInfo.data.user.id;
         const user_id = userInfo.data.user.id;
+  
         await AsyncStorage.setItem('user-id', String(user_id));
-       await sociallogin(email, provider_name, provider_id);
-       const name = userInfo.data.user.name;
-       const profile_pic = userInfo.data.user.photo;
-       await AsyncStorage.setItem('profile_pic',profile_pic);
-       await AsyncStorage.setItem('name', name);
+        await sociallogin(email, provider_name, provider_id);
+  
+        const name = userInfo.data.user.name;
+        const profile_pic = userInfo.data.user.photo;
+  
+        // Only store non-null, non-undefined values in AsyncStorage
+        if (profile_pic) {
+          await AsyncStorage.setItem('profile_pic', profile_pic);
+        } else {
+          await AsyncStorage.removeItem('profile_pic');
+        }
+  
+        if (name) {
+          await AsyncStorage.setItem('name', name);
+        } else {
+          await AsyncStorage.removeItem('name');
+        }
+  
         console.log('User Info:', userInfo);
         navigation.navigate('Home');
       }
     } catch (error) {
       console.error('Google Sign-In Error:', error);
+  
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         Alert.alert(
           'Sign-In Cancelled',
@@ -159,6 +175,7 @@ const Login = () => {
       }
     }
   };
+  
 
   const sociallogin = async (email, provider_name, provider_id) => {
     try {
