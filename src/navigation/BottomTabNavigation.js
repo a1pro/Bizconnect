@@ -16,18 +16,23 @@ const BottomTabNavigation = () => {
     <Tab.Navigator
       tabBarHideOnKeyboard={true}
       screenOptions={({route}) => ({
-        tabBarActiveTintColor: '#00008B',
-        tabBarInactiveTintColor: '#00008B',
+        tabBarActiveTintColor: '#0C18BF',
+        tabBarInactiveTintColor: '#0C18BF',
         tabBarLabelStyle: {
           fontSize: 13,
+          color:'#ffff',
+          marginTop:5
         },
         tabBarStyle: {
-          backgroundColor: '#0DC3FF',
+          backgroundColor: '#0C18BF',
           borderTopWidth: 0,
           shadowRadius: 10,
-          paddingTop: 10,
-          paddingBottom: 5,
+          paddingTop: 15,
+          paddingBottom:5,
           height: 80,
+          marginRight:10,
+          marginLeft:10,
+          borderRadius:20
         },
         tabBarIcon: ({focused, color}) => {
           let iconName;
@@ -50,7 +55,7 @@ const BottomTabNavigation = () => {
           return (
             <View
               style={{
-                backgroundColor: focused ? '#ADD8E6' : '#ADD8E6',
+                backgroundColor: focused ? '#ffff' : '#ffff',
                 borderRadius: 30,
                 width: 46,
                 height: 46,

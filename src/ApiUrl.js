@@ -17,4 +17,5 @@ export const Base_url = {
     tickets:`${base_url}app/tickets`,
     getUser:`${base_url}app/getusers`,
     userSearch:`${base_url}get/search/users`,
+    twiliotoken:`${base_url}generate-twilio-video-token`
 }

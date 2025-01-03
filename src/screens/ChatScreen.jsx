@@ -15,13 +15,18 @@ import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserAvatar from 'react-native-user-avatar';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import {PermissionsAndroid, Platform} from 'react-native';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import RNFS from 'react-native-fs';
+import storage from '@react-native-firebase/storage';
 
 const ChatScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const {userName, userProfilePic, chatId} = route.params;
+  // const {userName,userProfilePic, chatId} = route.params;
+  const { userName, userProfilePic, chatId } = route.params;
+
   const [chatMessages, setChatMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -126,7 +131,7 @@ const ChatScreen = () => {
       // Rollback the optimistic update if Firestore fails
       setChatMessages(prevMessages =>
         prevMessages.filter(msg => msg.id !== newMessage.id),
-      );
+      ); 
     }
   };
 
@@ -150,8 +155,34 @@ const ChatScreen = () => {
   }, [audioRecorderPlayer]);
 
   // Start or stop recording
+
+  // Request storage permission (for external storage access)
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android' && Platform.Version >= 23) {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission',
+            message:
+              'This app needs access to your storage to save audio files.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('Storage permission denied');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
+
   const toggleRecording = async () => {
     try {
+      // Request microphone permission
       const permissionResult = await request(PERMISSIONS.ANDROID.RECORD_AUDIO);
 
       if (permissionResult !== RESULTS.GRANTED) {
@@ -159,16 +190,30 @@ const ChatScreen = () => {
         return;
       }
 
+      // Request storage permission (if saving to external storage)
+      await requestStoragePermission();
+
       if (audioRecorderPlayer) {
         if (isRecording) {
+          // Stop recording and get the audio file path
           const result = await audioRecorderPlayer.stopRecorder();
-          setAudioFilePath(result);
+          setAudioFilePath(result); // You may want to save this file path for future use
           setIsRecording(false);
-          handleSendAudio(result);
+          handleSendAudio(result); // Send the audio file or save it
         } else {
-          const path = `${AudioRecorderPlayer.getRecordingPath()}audio_${Date.now()}.aac`;
-          console.log('Recording audio to path:', path);
-          await audioRecorderPlayer.startRecorder(path);
+          // Ensure that any ongoing recording is stopped before starting a new one
+          await audioRecorderPlayer.stopRecorder(); // Stop any previous recording
+
+          // Determine the correct file path based on the platform
+          const path = Platform.select({
+            ios: RNFS.DocumentDirectoryPath, // iOS uses the Documents directory
+            android: RNFS.ExternalDirectoryPath, // Android uses external storage directory
+          });
+
+          // Construct the full path with a unique filename
+          const fullPath = `${path}/audio_${Date.now()}.aac`;
+          console.log('Recording audio to path:', fullPath);
+          await audioRecorderPlayer.startRecorder(fullPath);
           setIsRecording(true);
         }
       } else {
@@ -180,33 +225,56 @@ const ChatScreen = () => {
   };
 
   // Handle sending image
-  const handleSendImage = async assets => {
-    const newMessage = {
-      senderId: currentUserId,
-      receiverId: receiverId,
-      message: '',
-      imageUri: assets[0].uri,
-      timestamp: firestore.FieldValue.serverTimestamp(),
-      conversationId: chatId,
-      participants: [currentUserId, receiverId],
-    };
-
-    // Optimistically update UI by adding the image message instantly
-    setChatMessages(prevMessages => [
-      ...prevMessages,
-      {...newMessage, id: Date.now().toString()},
-    ]);
-
+  const handleSendImage = async (assets) => {
+    if (!assets || assets.length === 0) return;
+  
+    let newMessage = null;
+    
     try {
+      const imageUri = assets[0].uri;
+      const imageName = `images/${Date.now()}.jpg`; // Use a unique name for each image
+  
+      // Upload the image to Firebase Storage
+      const uploadTask = storage().ref(imageName).putFile(imageUri);
+  
+      // Wait for the upload to complete
+      await uploadTask;
+  
+      // Get the image URL after upload
+      const imageUrl = await storage().ref(imageName).getDownloadURL();
+      
+      // Now, send the image URL to Firestore
+      newMessage = {
+        senderId: currentUserId,
+        receiverId: receiverId,
+        message: '',
+        imageUri: imageUrl, // Update with the image URL
+        timestamp: firestore.FieldValue.serverTimestamp(),
+        conversationId: chatId,
+        participants: [currentUserId, receiverId],
+      };
+  
+      // Optimistically update UI by adding the image message instantly
+      setChatMessages((prevMessages) => [
+        ...prevMessages,
+        { ...newMessage, id: Date.now().toString() },
+      ]);
+  
+      // Add message to Firestore
       await firestore().collection('messages').add(newMessage);
     } catch (error) {
       console.error('Error sending image:', error);
-      // Rollback the optimistic update if Firestore fails
-      setChatMessages(prevMessages =>
-        prevMessages.filter(msg => msg.id !== newMessage.id),
-      );
+  
+      // If an error occurred, remove the optimistic update
+      if (newMessage) {
+        setChatMessages((prevMessages) =>
+          prevMessages.filter((msg) => msg.id !== newMessage.id)
+        );
+      }
     }
   };
+  
+  
 
   // Open camera to capture image
   const openCamera = async () => {
@@ -214,7 +282,7 @@ const ChatScreen = () => {
       mediaType: 'photo',
       cameraType: 'back',
     });
-    if (result.assets) {
+    if (result.assets && result.assets.length > 0) {
       handleSendImage(result.assets);
     }
   };
@@ -225,7 +293,7 @@ const ChatScreen = () => {
       selectionLimit: 4,
       mediaType: 'photo',
     });
-    if (result.assets) {
+    if (result.assets && result.assets.length > 0) {
       handleSendImage(result.assets);
     }
   };
@@ -250,32 +318,47 @@ const ChatScreen = () => {
 
   const renderChatMessage = ({item}) => {
     return (
-      <TouchableOpacity
-        style={[
-          styles.chatBubble,
-          item.senderId === currentUserId
-            ? styles.senderBubble
-            : styles.receiverBubble,
-        ]}
-        onLongPress={() => setSelectedMessage(item)}>
-        {item.audioUri ? (
-          <TouchableOpacity
-            onPress={() => audioRecorderPlayer.startPlayer(item.audioUri)}>
-            <Text style={styles.chatText}>Audio Message</Text>
-          </TouchableOpacity>
-        ) : item.imageUri ? (
-          <Image source={{uri: item.imageUri}} style={styles.chatImage} />
-        ) : (
-          <Text style={styles.chatText}>{item.message}</Text>
-        )}
-        {selectedMessage?.id === item.id && (
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={handleDeleteMessage}>
-            <Ionicons name="trash-outline" size={24} color="white" />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
+      <View style={{marginBottom: 20}}>
+        <TouchableOpacity
+          style={[
+            styles.chatBubble,
+            item.senderId === currentUserId
+              ? styles.senderBubble
+              : styles.receiverBubble,
+          ]}
+          onLongPress={() => setSelectedMessage(item)}>
+          {item.audioUri ? (
+            <TouchableOpacity
+              onPress={() => audioRecorderPlayer.startPlayer(item.audioUri)}>
+              <Text style={styles.chatText}>Audio Message</Text>
+            </TouchableOpacity>
+          ) : item.imageUri ? (
+            <Image
+              source={{uri: item.imageUri}}
+              style={styles.chatImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.chatText}>{item.message}</Text>
+          )}
+          {selectedMessage?.id === item.id && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeleteMessage}>
+              <Ionicons name="trash-outline" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+        {/* Tail design */}
+        <View
+          style={[
+            styles.tail,
+            item.senderId === currentUserId
+              ? styles.senderTail
+              : styles.receiverTail,
+          ]}
+        />
+      </View>
     );
   };
 
@@ -290,15 +373,29 @@ const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back-ios-new" size={25} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>{userName}</Text>
-        {userProfilePic ? (
-          <Image source={{uri: userProfilePic}} style={styles.profilePic} />
-        ) : (
-          <UserAvatar size={50} name={userName || 'Default Name'} />
-        )}
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <MaterialIcons name="arrow-back-ios-new" size={25} color="#fff" />
+          </TouchableOpacity>
+          {userProfilePic ? (
+            <Image source={{uri: userProfilePic}} style={styles.profilePic} />
+          ) : (
+            <UserAvatar
+              size={50}
+              name={userName || 'Default Name'}
+              style={styles.profilePic}
+            />
+          )}
+          <Text style={styles.headerText}>{userName}</Text>
+        </View>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <TouchableOpacity style={{marginRight: 30}} onPress={()=>navigation.navigate('AudioCallScreen',{identity:currentUserId,otherIdentity:receiverId})}>
+            <Ionicons name="call-outline" size={30} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={{marginRight: 15}} onPress={()=>navigation.navigate('VideoCallScreen',{identity:currentUserId,otherIdentity:receiverId,userName:userName})}>
+            <Ionicons name="videocam-outline" size={30} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -329,10 +426,11 @@ const ChatScreen = () => {
             {inputMessage.trim() ? (
               <Ionicons name="send" size={25} color="#007AFF" />
             ) : (
-              <Image
-                source={require('../assets/microphone.png')}
-                style={{width: 25}}
-              />
+              <Ionicons name="send" size={25} color="#007AFF" />
+              // <Image
+              //   source={require('../assets/microphone.png')}
+              //   style={{width: 25}}
+              // />
             )}
           </TouchableOpacity>
         </View>
@@ -354,15 +452,16 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#002D93',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerText: {
-    flex: 1,
     color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
+    paddingLeft: 10,
   },
-  profilePic: {width: 40, height: 40, borderRadius: 20},
+  profilePic: {width: 40, height: 40, borderRadius: 20, marginLeft: 15},
   chatArea: {flex: 1},
   chatContent: {padding: 10},
   chatBubble: {
@@ -371,9 +470,43 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 5,
   },
-  senderBubble: {alignSelf: 'flex-end', backgroundColor: '#00B8F4'},
-  receiverBubble: {alignSelf: 'flex-start', backgroundColor: '#E4E6EB'},
-  chatText: {fontSize: 16, color: '#000'},
+  senderBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#00B8F4',
+    borderRadius: 15,
+  },
+  senderTail: {
+    position: 'absolute',
+    bottom: -9,
+    right: 10,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 15,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#26A8E0',
+  },
+  receiverTail: {
+    position: 'absolute',
+    bottom: -9,
+    left: 10,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 15,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#26A8E0',
+  },
+  receiverBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#3985F7',
+    borderRadius: 15,
+  },
+  chatText: {fontSize: 16, color: '#ffff'},
   chatImage: {width: 200, height: 200, borderRadius: 10},
   inputWithSend: {
     flex: 1,
@@ -409,4 +542,5 @@ const styles = StyleSheet.create({
     padding: 5,
   },
 });
+
 export default ChatScreen;

@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from 'react-native';
 import styles from './styles/Styles';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -15,8 +16,6 @@ import axios from 'axios';
 import {useDispatch, useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getUser} from '../redux/GetUserSlice';
-
-// const defaultImage = require('../assets/user-image.png');
 
 const ChatInbox = () => {
   const navigation = useNavigation();
@@ -28,6 +27,7 @@ const ChatInbox = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false); // For refresh control
 
   // Function to handle search input change
   const handleSearchChange = query => {
@@ -77,6 +77,14 @@ const ChatInbox = () => {
       setLoading(false);
     }
   };
+
+  // Refresh function to reload data
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await dispatch(getUser());
+    setIsRefreshing(false);
+  };
+
   useEffect(() => {
     dispatch(getUser());
   }, [dispatch]);
@@ -90,8 +98,8 @@ const ChatInbox = () => {
     <TouchableOpacity
       onPress={() =>
         navigation.navigate('ChatScreen', {
-          userName: item.full_name, 
-          userProfilePic: item.profile_pic, 
+          userName: item.full_name,
+          userProfilePic: item.profile_pic,
           chatId: item.id,
         })
       }>
@@ -123,13 +131,13 @@ const ChatInbox = () => {
     <>
       <View style={[styles.headersection, {paddingTop: 20, paddingBottom: 20}]}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('Home')}
           style={{
             position: 'absolute',
             left: 10,
             width: 50,
             height: 50,
-            top: 27,
+            top: 20,
           }}>
           <MaterialIcons name="arrow-back-ios-new" size={25} color="#ffff" />
         </TouchableOpacity>
@@ -150,6 +158,7 @@ const ChatInbox = () => {
           ]}
         />
       </View>
+
       {/* Display loading or error states */}
       {loading ? (
         <View style={{alignItems: 'center', marginTop: 20}}>
@@ -165,6 +174,12 @@ const ChatInbox = () => {
           renderItem={renderChatData}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing} 
+              onRefresh={handleRefresh}
+            />
+          }
         />
       ) : (
         <View style={{alignItems: 'center', marginTop: 20}}>
